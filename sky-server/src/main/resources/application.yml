@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: sky-take-out
+  profiles:
+    active: dev

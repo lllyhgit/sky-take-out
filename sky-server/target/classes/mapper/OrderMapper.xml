@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.sky.mapper.OrderMapper">
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO orders (number, status, user_id, address_book_id, order_time, pay_method,
+                            pay_status, amount, remark, phone, address, user_name, consignee,
+                            estimated_delivery_time, delivery_status, pack_amount, tableware_number,
+                            tableware_status)
+        VALUES (#{number}, #{status}, #{userId}, #{addressBookId}, #{orderTime}, #{payMethod},
+                #{payStatus}, #{amount}, #{remark}, #{phone}, #{address}, #{userName}, #{consignee},
+                #{estimatedDeliveryTime}, #{deliveryStatus}, #{packAmount}, #{tablewareNumber},
+                #{tablewareStatus})
+    </insert>
+
+    <update id="update">
+        UPDATE orders
+        <set>
+            <if test="status != null">status = #{status},</if>
+            <if test="checkoutTime != null">checkout_time = #{checkoutTime},</if>
+            <if test="payStatus != null">pay_status = #{payStatus},</if>
+            <if test="cancelReason != null">cancel_reason = #{cancelReason},</if>
+            <if test="rejectionReason != null">rejection_reason = #{rejectionReason},</if>
+            <if test="cancelTime != null">cancel_time = #{cancelTime},</if>
+            <if test="deliveryTime != null">delivery_time = #{deliveryTime},</if>
+            <if test="deliveryStatus != null">delivery_status = #{deliveryStatus},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <select id="pageQuery" resultType="com.sky.entity.Orders">
+        SELECT * FROM orders
+        <where>
+            <if test="userId != null">AND user_id = #{userId}</if>
+            <if test="status != null">AND status = #{status}</if>
+            <if test="number != null and number != ''">AND number LIKE CONCAT('%', #{number}, '%')</if>
+            <if test="phone != null and phone != ''">AND phone LIKE CONCAT('%', #{phone}, '%')</if>
+            <if test="beginTime != null and beginTime != ''">AND order_time &gt;= #{beginTime}</if>
+            <if test="endTime != null and endTime != ''">AND order_time &lt;= #{endTime}</if>
+        </where>
+        ORDER BY order_time DESC
+    </select>
+
+    <select id="conditionSearch" resultType="com.sky.entity.Orders">
+        SELECT * FROM orders
+        <where>
+            <if test="status != null">AND status = #{status}</if>
+            <if test="number != null and number != ''">AND number LIKE CONCAT('%', #{number}, '%')</if>
+            <if test="phone != null and phone != ''">AND phone LIKE CONCAT('%', #{phone}, '%')</if>
+            <if test="beginTime != null and beginTime != ''">AND order_time &gt;= #{beginTime}</if>
+            <if test="endTime != null and endTime != ''">AND order_time &lt;= #{endTime}</if>
+        </where>
+        ORDER BY order_time DESC
+    </select>
+
+    <select id="getTurnoverByDate" resultType="double">
+        SELECT COALESCE(SUM(amount), 0)
+        FROM orders
+        WHERE status = 5 AND DATE(order_time) = #{date}
+    </select>
+
+    <select id="getOrderCountByDate" resultType="int">
+        SELECT COUNT(*) FROM orders WHERE DATE(order_time) = #{date}
+    </select>
+
+    <select id="getValidOrderCountByDate" resultType="int">
+        SELECT COUNT(*) FROM orders WHERE status = 5 AND DATE(order_time) = #{date}
+    </select>
+
+    <select id="getTop10Dishes" resultType="java.util.Map">
+        SELECT od.name, SUM(od.number) AS count
+        FROM order_detail od
+        JOIN orders o ON od.order_id = o.id
+        WHERE o.status = 5
+        <if test="begin != null">AND o.order_time &gt;= #{begin}</if>
+        <if test="end != null">AND o.order_time &lt;= #{end}</if>
+        GROUP BY od.name
+        ORDER BY count DESC
+        LIMIT 10
+    </select>
+
+</mapper>
